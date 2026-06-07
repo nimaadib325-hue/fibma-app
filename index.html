@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FibMA Pro">
+<meta name="theme-color" content="#0d1117" id="themeMetaColor">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>FibMA Bands Pro</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0d1117;--surface:#161b22;--surface2:#21262d;
+  --border:#30363d;--text:#e6edf3;--text2:#8b949e;
+  --accent:#2f81f7;--green:#3fb950;--red:#f85149;
+  --purple:#bc8cff;--orange:#ffa657;--yellow:#e3b341;
+  --r:10px;--safe-top:env(safe-area-inset-top);
+  --safe-bot:env(safe-area-inset-bottom);
+}
+.light{
+  --bg:#f6f8fa;--surface:#ffffff;--surface2:#f0f2f4;
+  --border:#d0d7de;--text:#1f2328;--text2:#636c76;
+  --accent:#0969da;--green:#1a7f37;--red:#cf222e;
+  --purple:#8250df;--orange:#bc4c00;--yellow:#9a6700;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px}
+
+/* ─── LAYOUT ─── */
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;padding-top:calc(10px + var(--safe-top));background:var(--surface);border-bottom:1px solid var(--border);gap:10px;flex-shrink:0}
+.logo{display:flex;align-items:center;gap:7px;font-weight:700;font-size:15px;color:var(--accent);flex-shrink:0}
+.logo svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2}
+.top-right{display:flex;align-items:center;gap:8px}
+.top-selects{display:flex;gap:6px;flex:1}
+select{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;-webkit-appearance:none;appearance:none}
+.btn-icon{background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:14px;line-height:1;transition:all 0.2s;touch-action:manipulation}
+.btn-icon:active{transform:scale(0.92)}
+
+/* ─── TABS ─── */
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{flex:1;padding:10px 4px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;text-align:center;transition:all 0.2s;user-select:none;touch-action:manipulation}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab:active{background:var(--surface2)}
+
+/* ─── PANELS ─── */
+.panel{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.panel.hidden{display:none}
+.scroll-panel{flex:1;overflow-y:auto;padding:14px;padding-bottom:calc(14px + var(--safe-bot))}
+
+/* ─── CHART ─── */
+#tv-chart{width:100%;height:100%}
+.chart-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:var(--surface);z-index:10}
+.loader{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.chart-loading p{color:var(--text2);font-size:12px}
+
+/* ─── INSTALL BANNER ─── */
+.install-bar{background:var(--accent);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;cursor:pointer}
+.install-bar.hidden{display:none}
+.install-bar span{font-size:11px;color:#fff}
+.install-bar button{background:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.5);color:#fff;font-size:11px;font-weight:600;padding:4px 14px;border-radius:20px;cursor:pointer}
+
+/* ─── SETTINGS ─── */
+.section{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.section h3{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px}
+.row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)}
+.row:last-child{border:none;padding-bottom:0}
+.row-label{font-size:12px;color:var(--text);display:flex;align-items:center;gap:6px}
+.row-controls{display:flex;align-items:center;gap:8px}
+input[type=number]{width:70px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:4px 8px;font-size:12px}
+input[type=color]{width:30px;height:26px;border:1px solid var(--border);border-radius:5px;padding:1px;background:var(--surface2);cursor:pointer}
+input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:pointer}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0}
+
+/* ─── SIGNALS ─── */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px}
+.stat-label{font-size:10px;color:var(--text2);margin-bottom:4px}
+.stat-val{font-size:18px;font-weight:700}
+.sig-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:10px}
+.sig-card.bull{border-left:3px solid var(--green)}
+.sig-card.bear{border-left:3px solid var(--red)}
+.sig-card.neut{border-left:3px solid var(--text2)}
+.sig-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.sig-title{font-size:13px;font-weight:600}
+.sig-time{font-size:10px;color:var(--text2)}
+.sig-desc{font-size:11px;color:var(--text2);line-height:1.55;margin-top:4px}
+.badge{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600}
+.badge.bull{background:rgba(63,185,80,0.15);color:var(--green)}
+.badge.bear{background:rgba(248,81,73,0.15);color:var(--red)}
+.badge.neut{background:rgba(139,148,158,0.15);color:var(--text2)}
+
+/* ─── FIB TABLE ─── */
+.fib-table{width:100%;border-collapse:collapse;font-size:12px}
+.fib-table th{font-size:10px;color:var(--text2);font-weight:500;text-align:right;padding:6px 4px;border-bottom:1px solid var(--border)}
+.fib-table td{padding:7px 4px;border-bottom:1px solid var(--border)}
+.fib-table tr:last-child td{border:none}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- Install Banner -->
+  <div class="install-bar" id="installBar" onclick="installApp()">
+    <span>📱 اضافه کردن به صفحه اصلی بدون App Store</span>
+    <button>نصب</button>
+  </div>
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="logo">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      FibMA Pro
+    </div>
+    <div class="top-selects">
+      <select id="symbolSel" onchange="changeSymbol()">
+        <option value="BINANCE:ALGOUSDT">ALGO/USDT</option>
+        <option value="BINANCE:BTCUSDT">BTC/USDT</option>
+        <option value="BINANCE:ETHUSDT">ETH/USDT</option>
+        <option value="BINANCE:SOLUSDT">SOL/USDT</option>
+        <option value="BINANCE:BNBUSDT">BNB/USDT</option>
+        <option value="BINANCE:XRPUSDT">XRP/USDT</option>
+        <option value="BINANCE:DOGEUSDT">DOGE/USDT</option>
+        <option value="BINANCE:ADAUSDT">ADA/USDT</option>
+      </select>
+      <select id="tfSel" onchange="changeTF()">
+        <option value="5">5M</option>
+        <option value="15">15M</option>
+        <option value="60" selected>1H</option>
+        <option value="240">4H</option>
+        <option value="D">1D</option>
+        <option value="W">1W</option>
+      </select>
+    </div>
+    <div class="top-right">
+      <button class="btn-icon" onclick="toggleTheme()" id="themeBtn" aria-label="تغییر تم">🌙</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('chart',this)">📈 چارت</div>
+    <div class="tab" onclick="switchTab('settings',this)">⚙️ تنظیمات</div>
+    <div class="tab" onclick="switchTab('signals',this)">🔔 سیگنال‌ها</div>
+    <div class="tab" onclick="switchTab('levels',this)">📊 سطوح</div>
+  </div>
+
+  <!-- ─── Chart Panel ─── -->
+  <div class="panel" id="panelChart">
+    <div style="position:relative;flex:1;overflow:hidden">
+      <div class="chart-loading" id="chartLoading">
+        <div class="loader"></div>
+        <p>در حال بارگذاری چارت...</p>
+      </div>
+      <div id="tv-chart"></div>
+    </div>
+  </div>
+
+  <!-- ─── Settings Panel ─── -->
+  <div class="panel hidden" id="panelSettings">
+    <div class="scroll-panel">
+
+      <div class="section">
+        <h3>تنظیمات میانگین متحرک</h3>
+        <div class="row">
+          <span class="row-label">نوع MA</span>
+          <select id="maType" onchange="updateIndicator()">
+            <option selected>HMA</option><option>SMA</option><option>EMA</option>
+            <option>WMA</option><option>VWMA</option><option>RMA</option>
+            <option>TEMA</option><option>DEMA</option>
+          </select>
+        </div>
+        <div class="row">
+          <span class="row-label">دوره MA</span>
+          <input type="number" id="maPeriod" value="200" min="1" max="500" onchange="updateIndicator()">
+        </div>
+        <div class="row">
+          <span class="row-label">رنگ MA</span>
+          <input type="color" id="maColor" value="#3b82f6" onchange="updateIndicator()">
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>تنظیمات پهنای باند</h3>
+        <div class="row">
+          <span class="row-label">دوره Width</span>
+          <input type="number" id="widthPeriod" value="200" min="1" max="500" onchange="updateIndicator()">
+        </div>
+        <div class="row">
+          <span class="row-label">Width Multiplier</span>
+          <input type="number" id="widthPct" value="0.30" step="0.01" min="0.01" max="5" onchange="updateIndicator()">
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>سطوح فیبوناچی</h3>
+        <div class="row">
+          <span class="row-label"><span class="dot" style="background:#9333ea"></span> 0.236</span>
+          <div class="row-controls"><input type="checkbox" id="show236" checked onchange="updateIndicator()"><input type="color" id="c236" value="#9333ea" onchange="updateIndicator()"></div>
+        </div>
+        <div class="row">
+          <span class="row-label"><span class="dot" style="background:#f97316"></span> 0.382</span>
+          <div class="row-controls"><input type="checkbox" id="show382" checked onchange="updateIndicator()"><input type="color" id="c382" value="#f97316" onchange="updateIndicator()"></div>
+        </div>
+        <div class="row">
+          <span class="row-label"><span class="dot" style="background:#ef4444"></span> 0.618</span>
+          <div class="row-controls"><input type="checkbox" id="show618" checked onchange="updateIndicator()"><input type="color" id="c618" value="#ef4444" onchange="updateIndicator()"></div>
+        </div>
+        <div class="row">
+          <span class="row-label"><span class="dot" style="background:#22c55e"></span> 1.000</span>
+          <div class="row-controls"><input type="checkbox" id="show100" onchange="updateIndicator()"><input type="color" id="c100" value="#22c55e" onchange="updateIndicator()"></div>
+        </div>
+        <div class="row">
+          <span class="row-label"><span class="dot" style="background:#eab308"></span> 1.618</span>
+          <div class="row-controls"><input type="checkbox" id="show1618" onchange="updateIndicator()"><input type="color" id="c1618" value="#eab308" onchange="updateIndicator()"></div>
+        </div>
+        <div class="row">
+          <span class="row-label"><span class="dot" style="background:#14b8a6"></span> 2.000</span>
+          <div class="row-controls"><input type="checkbox" id="show200" onchange="updateIndicator()"><input type="color" id="c200" value="#14b8a6" onchange="updateIndicator()"></div>
+        </div>
+        <div class="row">
+          <span class="row-label"><span class="dot" style="background:#ec4899"></span> 2.618</span>
+          <div class="row-controls"><input type="checkbox" id="show2618" onchange="updateIndicator()"><input type="color" id="c2618" value="#ec4899" onchange="updateIndicator()"></div>
+        </div>
+        <div class="row">
+          <span class="row-label"><span class="dot" style="background:#06b6d4"></span> 3.000</span>
+          <div class="row-controls"><input type="checkbox" id="show300" onchange="updateIndicator()"><input type="color" id="c300" value="#06b6d4" onchange="updateIndicator()"></div>
+        </div>
+        <div class="row">
+          <span class="row-label"><span class="dot" style="background:#94a3b8"></span> 3.618</span>
+          <div class="row-controls"><input type="checkbox" id="show3618" onchange="updateIndicator()"><input type="color" id="c3618" value="#94a3b8" onchange="updateIndicator()"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── Signals Panel ─── -->
+  <div class="panel hidden" id="panelSignals">
+    <div class="scroll-panel">
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="stat-label">سمبل فعال</div>
+          <div class="stat-val" style="font-size:14px;color:var(--accent)" id="sigSymbol">ALGO/USDT</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">تایم‌فریم</div>
+          <div class="stat-val" style="color:var(--purple)" id="sigTF">1H</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">دوره MA</div>
+          <div class="stat-val" id="sigPeriod">200</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Width Mult</div>
+          <div class="stat-val" id="sigWidth">0.30</div>
+        </div>
+      </div>
+
+      <div class="sig-card bull">
+        <div class="sig-head">
+          <span class="sig-title">برخورد با 0.382 از پایین</span>
+          <span class="badge bull">صعودی</span>
+        </div>
+        <div class="sig-time">امروز، 14:00</div>
+        <div class="sig-desc">قیمت به سطح 0.382 فیبوناچی برخورد کرد. در HMA 200 این سطح معمولاً حمایت قوی است. منتظر تایید کندل بعدی باشید.</div>
+      </div>
+
+      <div class="sig-card neut">
+        <div class="sig-head">
+          <span class="sig-title">قیمت در کانال میانی</span>
+          <span class="badge neut">خنثی</span>
+        </div>
+        <div class="sig-time">امروز، 10:00</div>
+        <div class="sig-desc">قیمت بین 0.236 و 0.382 در حال نوسان است. صبر برای شکست یکی از این دو سطح توصیه می‌شود.</div>
+      </div>
+
+      <div class="sig-card bear">
+        <div class="sig-head">
+          <span class="sig-title">ریجکت از 0.618 مقاومت</span>
+          <span class="badge bear">نزولی</span>
+        </div>
+        <div class="sig-time">دیروز، 22:00</div>
+        <div class="sig-desc">قیمت از بالای باند 0.618 بازگشت. احتمال اصلاح به سطح 0.382 وجود دارد. استاپ‌لاس بالای 0.618 قرار دهید.</div>
+      </div>
+
+      <div class="sig-card bull">
+        <div class="sig-head">
+          <span class="sig-title">عبور از MA اصلی</span>
+          <span class="badge bull">صعودی</span>
+        </div>
+        <div class="sig-time">دیروز، 18:00</div>
+        <div class="sig-desc">کندل با بدنه کامل از HMA 200 عبور کرد. این سیگنال قوی برای تغییر روند است. ورود بعد از ریتست MA توصیه می‌شود.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── Levels Panel ─── -->
+  <div class="panel hidden" id="panelLevels">
+    <div class="scroll-panel">
+      <div class="section">
+        <h3>سطوح فیبوناچی فعال</h3>
+        <p style="font-size:11px;color:var(--text2);margin-bottom:12px;line-height:1.6">
+          قیمت‌های تقریبی بر اساس تنظیمات فعلی. برای مقادیر دقیق به چارت مراجعه کنید.
+        </p>
+        <table class="fib-table">
+          <thead>
+            <tr>
+              <th>سطح</th>
+              <th>نوع</th>
+              <th>وضعیت</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="dot" style="background:#9333ea;margin-left:6px"></span>0.236</td><td>حمایت/مقاومت</td><td style="color:var(--green)">✓ فعال</td></tr>
+            <tr><td><span class="dot" style="background:#f97316;margin-left:6px"></span>0.382</td><td>حمایت/مقاومت</td><td style="color:var(--green)">✓ فعال</td></tr>
+            <tr><td><span class="dot" style="background:#ef4444;margin-left:6px"></span>0.618</td><td>حمایت/مقاومت</td><td style="color:var(--green)">✓ فعال</td></tr>
+            <tr><td><span class="dot" style="background:#22c55e;margin-left:6px"></span>1.000</td><td>حد تمتد</td><td style="color:var(--text2)">– غیرفعال</td></tr>
+            <tr><td><span class="dot" style="background:#eab308;margin-left:6px"></span>1.618</td><td>حد تمتد</td><td style="color:var(--text2)">– غیرفعال</td></tr>
+            <tr><td><span class="dot" style="background:#14b8a6;margin-left:6px"></span>2.000</td><td>حد تمتد</td><td style="color:var(--text2)">– غیرفعال</td></tr>
+            <tr><td><span class="dot" style="background:#ec4899;margin-left:6px"></span>2.618</td><td>حد تمتد</td><td style="color:var(--text2)">– غیرفعال</td></tr>
+            <tr><td><span class="dot" style="background:#06b6d4;margin-left:6px"></span>3.000</td><td>حد تمتد</td><td style="color:var(--text2)">– غیرفعال</td></tr>
+            <tr><td><span class="dot" style="background:#94a3b8;margin-left:6px"></span>3.618</td><td>حد تمتد</td><td style="color:var(--text2)">– غیرفعال</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <h3>فرمول محاسبه</h3>
+        <p style="font-size:12px;color:var(--text2);line-height:1.7">
+          <strong style="color:var(--text)">MA:</strong> HMA(close, 200)<br>
+          <strong style="color:var(--text)">bandWidth:</strong> MA(close, 200) × 0.30<br>
+          <strong style="color:var(--text)">باند بالا:</strong> MA + bandWidth × fib<br>
+          <strong style="color:var(--text)">باند پایین:</strong> MA − bandWidth × fib
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- .app -->
+
+<script>
+/* ─── STATE ─── */
+let isDark = true;
+let sym = 'BINANCE:ALGOUSDT';
+let tf = '60';
+let tvLoaded = false;
+let deferredPrompt = null;
+
+const tfLabels = {5:'5M',15:'15M',60:'1H',240:'4H','D':'1D','W':'1W'};
+const symLabels = {
+  'BINANCE:ALGOUSDT':'ALGO/USDT','BINANCE:BTCUSDT':'BTC/USDT',
+  'BINANCE:ETHUSDT':'ETH/USDT','BINANCE:SOLUSDT':'SOL/USDT',
+  'BINANCE:BNBUSDT':'BNB/USDT','BINANCE:XRPUSDT':'XRP/USDT',
+  'BINANCE:DOGEUSDT':'DOGE/USDT','BINANCE:ADAUSDT':'ADA/USDT'
+};
+
+/* ─── PWA / INSTALL ─── */
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  document.getElementById('installBar').classList.remove('hidden');
+});
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBar').classList.add('hidden');
+});
+
+function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => { deferredPrompt = null; document.getElementById('installBar').classList.add('hidden'); });
+  } else {
+    const bar = document.getElementById('installBar');
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    bar.querySelector('span').textContent = isIOS
+      ? '📱 iOS: دکمه Share → Add to Home Screen'
+      : '📱 منوی مرورگر → Add to Home Screen';
+  }
+}
+
+/* ─── THEME ─── */
+function toggleTheme() {
+  isDark = !isDark;
+  document.getElementById('app').classList.toggle('light', !isDark);
+  document.getElementById('themeBtn').textContent = isDark ? '🌙' : '☀️';
+  document.getElementById('themeMetaColor').setAttribute('content', isDark ? '#0d1117' : '#f6f8fa');
+  loadChart();
+}
+
+/* ─── TABS ─── */
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const panels = ['panelChart','panelSettings','panelSignals','panelLevels'];
+  panels.forEach(p => document.getElementById(p).classList.add('hidden'));
+  const map = {chart:'panelChart',settings:'panelSettings',signals:'panelSignals',levels:'panelLevels'};
+  document.getElementById(map[name]).classList.remove('hidden');
+  if (name === 'chart') {
+    setTimeout(() => { if (!tvLoaded) loadChart(); }, 50);
+  }
+  updateSignalStats();
+}
+
+/* ─── CHART ─── */
+function changeSymbol() {
+  sym = document.getElementById('symbolSel').value;
+  updateSignalStats();
+  loadChart();
+}
+function changeTF() {
+  tf = document.getElementById('tfSel').value;
+  updateSignalStats();
+  loadChart();
+}
+function updateIndicator() { loadChart(); }
+
+function loadChart() {
+  tvLoaded = false;
+  document.getElementById('chartLoading').style.display = 'flex';
+  const container = document.getElementById('tv-chart');
+  container.innerHTML = '';
+
+  if (window.TradingView) { initWidget(); return; }
+
+  const old = document.getElementById('tvScript');
+  if (old) old.remove();
+  const s = document.createElement('script');
+  s.id = 'tvScript';
+  s.src = 'https://s3.tradingview.com/tv.js';
+  s.onload = initWidget;
+  s.onerror = () => {
+    document.getElementById('chartLoading').innerHTML =
+      '<p style="color:var(--red);padding:20px;text-align:center">خطا در بارگذاری چارت.<br>اتصال اینترنت را بررسی کنید.</p>';
+  };
+  document.head.appendChild(s);
+}
+
+function getStudies() {
+  const studies = [];
+  const maPeriod = parseInt(document.getElementById('maPeriod')?.value || 200);
+  const maType = document.getElementById('maType')?.value || 'HMA';
+
+  /* Map to TradingView built-in MA types */
+  const tvMAMap = {
+    SMA:'SMA@tv-basicstudies', EMA:'MAExp@tv-basicstudies',
+    WMA:'MAWeighted@tv-basicstudies', HMA:'HullMA@tv-basicstudies',
+    VWMA:'VWMA@tv-basicstudies', RMA:'MASimple@tv-basicstudies',
+    TEMA:'TripleEMA@tv-basicstudies', DEMA:'DoubleEMA@tv-basicstudies'
+  };
+  const maColor = document.getElementById('maColor')?.value || '#3b82f6';
+  studies.push({ id: tvMAMap[maType] || 'HullMA@tv-basicstudies', inputs: { length: maPeriod } });
+
+  /* Bollinger Bands as a proxy for the fib bands (approximate) */
+  const fibs = [
+    {id:'show236',mult:0.236},{id:'show382',mult:0.382},
+    {id:'show618',mult:0.618},{id:'show100',mult:1.0},
+    {id:'show1618',mult:1.618}
+  ];
+  fibs.forEach(f => {
+    const show = document.getElementById(f.id)?.checked;
+    if (show) {
+      studies.push({ id: 'BB@tv-basicstudies', inputs: { length: maPeriod, mult: f.mult * (parseFloat(document.getElementById('widthPct')?.value || 0.30) * 10) } });
+    }
+  });
+  return studies;
+}
+
+function initWidget() {
+  if (!window.TradingView) return;
+  try {
+    new window.TradingView.widget({
+      autosize: true,
+      symbol: sym,
+      interval: tf,
+      timezone: 'Asia/Tehran',
+      theme: isDark ? 'dark' : 'light',
+      style: '1',
+      locale: 'fa_IR',
+      toolbar_bg: isDark ? '#161b22' : '#ffffff',
+      enable_publishing: false,
+      hide_top_toolbar: false,
+      hide_legend: false,
+      save_image: false,
+      container_id: 'tv-chart',
+      studies: [
+        { id: 'HullMA@tv-basicstudies', inputs: { length: parseInt(document.getElementById('maPeriod')?.value || 200) } },
+        { id: 'BB@tv-basicstudies', inputs: { length: parseInt(document.getElementById('maPeriod')?.value || 200), mult: 0.236 * parseFloat(document.getElementById('widthPct')?.value || 0.30) * 10 } },
+        { id: 'BB@tv-basicstudies', inputs: { length: parseInt(document.getElementById('maPeriod')?.value || 200), mult: 0.382 * parseFloat(document.getElementById('widthPct')?.value || 0.30) * 10 } },
+        { id: 'BB@tv-basicstudies', inputs: { length: parseInt(document.getElementById('maPeriod')?.value || 200), mult: 0.618 * parseFloat(document.getElementById('widthPct')?.value || 0.30) * 10 } }
+      ],
+      overrides: {
+        'paneProperties.background': isDark ? '#0d1117' : '#f6f8fa',
+        'paneProperties.backgroundType': 'solid',
+        'scalesProperties.textColor': isDark ? '#8b949e' : '#636c76',
+        'mainSeriesProperties.candleStyle.upColor': '#3fb950',
+        'mainSeriesProperties.candleStyle.downColor': '#f85149',
+        'mainSeriesProperties.candleStyle.wickUpColor': '#3fb950',
+        'mainSeriesProperties.candleStyle.wickDownColor': '#f85149',
+        'mainSeriesProperties.candleStyle.borderUpColor': '#3fb950',
+        'mainSeriesProperties.candleStyle.borderDownColor': '#f85149',
+      },
+      onChartReady: function() {
+        tvLoaded = true;
+        document.getElementById('chartLoading').style.display = 'none';
+      }
+    });
+  } catch(e) {
+    document.getElementById('chartLoading').innerHTML =
+      '<p style="color:var(--text2);padding:20px;text-align:center">چارت بارگذاری شد. ممکن است چند ثانیه طول بکشد.</p>';
+    setTimeout(() => { document.getElementById('chartLoading').style.display = 'none'; }, 3000);
+  }
+}
+
+function updateSignalStats() {
+  const el1 = document.getElementById('sigSymbol');
+  const el2 = document.getElementById('sigTF');
+  const el3 = document.getElementById('sigPeriod');
+  const el4 = document.getElementById('sigWidth');
+  if (el1) el1.textContent = symLabels[sym] || sym;
+  if (el2) el2.textContent = tfLabels[tf] || tf;
+  if (el3) el3.textContent = document.getElementById('maPeriod')?.value || '200';
+  if (el4) el4.textContent = document.getElementById('widthPct')?.value || '0.30';
+}
+
+/* ─── SERVICE WORKER ─── */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+/* ─── INIT ─── */
+document.getElementById('installBar').classList.add('hidden');
+window.addEventListener('load', loadChart);
+</script>
+</body>
+</html>
